@@ -1,0 +1,28 @@
+---
+description: Broad/shared state lives in Redux, not prop drilling
+globs: app/**/*.tsx,components/**/*.tsx,lib/**/*.ts
+alwaysApply: false
+---
+
+# State Management
+
+Broad or cross-screen state MUST go in Redux. Do NOT prop drill it.
+
+"Broad state" = anything read or written by more than ~2 component levels or by
+multiple sibling screens (e.g. `WellnessProfile`, auth/guest status, selected
+place, feed filters). Today `profile`/`step`/`setProfile` are threaded from
+`app/page.tsx` through `OnboardingScreen` — that is exactly what should move to Redux.
+
+- Keep purely local UI state (hover, open/close, a single input) in `useState`. Local state stays local.
+- Redux Toolkit is the expected tool: create slices under `lib/store/` and select with typed hooks. If Redux is not yet installed, ask before adding it, then set up the store + `Provider`.
+- Prefer `useSelector`/`useDispatch` over passing setter functions (`setProfile`, `setStep`) down as props.
+
+```tsx
+// ❌ BAD — broad profile state prop-drilled through screens
+<OnboardingScreen profile={profile} setProfile={setProfile} step={step} setStep={setStep} />
+
+// ✅ GOOD — read/write from the store
+const profile = useAppSelector((s) => s.wellnessProfile);
+const dispatch = useAppDispatch();
+dispatch(setStep(step + 1));
+```

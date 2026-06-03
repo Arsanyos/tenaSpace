@@ -1,0 +1,31 @@
+---
+description: Where and how to create reusable UI components
+globs: app/**/*.tsx,components/**/*.tsx
+alwaysApply: false
+---
+
+# Reusable Components
+
+Any component that is (or could be) used in more than one place MUST live in `components/`.
+
+- Do NOT define reusable components inline inside `app/**/page.tsx` or other route files. Route files compose components; they do not define shared ones.
+- One component per file. File name is kebab-case and matches the export (e.g. `wellness-place-card.tsx` → `WellnessPlaceCard`).
+- Import via the `@/components/...` alias, never relative `../../components`.
+- Type props with an explicit `interface <Name>Props`.
+
+```tsx
+// ❌ BAD — reusable card defined inline in a route
+export default function FeedPage() {
+  const Card = ({ title }: { title: string }) => <div>{title}</div>;
+  return <Card title="Meditation" />;
+}
+
+// ✅ GOOD — extracted to components/, imported by alias
+import { WellnessPlaceCard } from "@/components/wellness-place-card";
+
+export default function FeedPage() {
+  return <WellnessPlaceCard title="Meditation" />;
+}
+```
+
+If you find yourself duplicating JSX, stop and extract it into `components/` first.

@@ -1,0 +1,34 @@
+---
+description: Prefer server-side data fetching; validate the approach with me
+globs: app/**/*.tsx,app/**/*.ts,lib/get-*.ts
+alwaysApply: false
+---
+
+# Server-Side Data Fetching
+
+Fetch data on the server where it makes sense (SEO, secrets/API keys, large
+payloads, first-paint data). Ask me to validate the approach before wiring it up.
+
+IMPORTANT — this project uses the Next.js **App Router** (`app/`), so there is
+no `getServerSideProps`. The App Router equivalent is an **async Server
+Component** that fetches directly (optionally with `export const dynamic = "force-dynamic"`
+for per-request data). Only use `getServerSideProps` if a file lives under a
+Pages Router `pages/` directory.
+
+- Default route files to Server Components. Add `"use client"` only when you need
+  hooks, browser APIs, or interactivity, and push it as far down the tree as possible.
+- Put fetching logic in `lib/get-*.ts` (matching the existing `lib/get-wellness-feed.ts`,
+  `lib/get-map-places.ts` pattern) and call it from the server component.
+- Before introducing or changing server-side fetching, ask me to confirm:
+  the data source, whether it should be per-request vs cached/revalidated, and
+  whether the component should stay server or go client.
+
+```tsx
+// ✅ App Router: async server component (no getServerSideProps)
+export const dynamic = "force-dynamic";
+
+export default async function FeedPage() {
+  const feed = await getPersonalizedWellnessFeed(profile);
+  return <WellnessFeed data={feed} />;
+}
+```
