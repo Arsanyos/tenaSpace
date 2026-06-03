@@ -1,25 +1,44 @@
 "use client";
 
 import { ArrowLeft } from "lucide-react";
-import { useMemo } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { PhoneShell } from "@/components/phone-shell";
 import { PlaceDetailScreen } from "@/components/place-detail-screen";
-import { getPlaceDetail } from "@/lib/get-place-detail";
+import {
+  createPlaceDetailFromCuratedPlace,
+  type WellnessPlaceDetailData,
+} from "@/lib/get-place-detail";
+import { findCuratedFeedPlace } from "@/lib/wellness-feed-storage";
 import { loadWellnessProfile } from "@/lib/wellness-profile-storage";
 
 export default function PlacePage() {
   const router = useRouter();
   const params = useParams<{ id: string | string[] }>();
-  const profile = useMemo(() => loadWellnessProfile(), []);
   const placeIdParam = params.id;
   const placeId = Array.isArray(placeIdParam) ? placeIdParam[0] : placeIdParam;
-  const detail = useMemo(() => (placeId ? getPlaceDetail(placeId, profile) : null), [placeId, profile]);
+  const [detail, setDetail] = useState<WellnessPlaceDetailData | null>(null);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      const place = placeId ? findCuratedFeedPlace(placeId) : null;
+      const profile = loadWellnessProfile();
+      setDetail(place ? createPlaceDetailFromCuratedPlace(place, profile) : null);
+      setLoaded(true);
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [placeId]);
 
   return (
     <PhoneShell>
       <div className="flex min-h-0 flex-1 flex-col">
-        {detail ? (
+        {!loaded ? (
+          <section className="flex flex-1 items-center justify-center px-6 text-center">
+            <p className="text-sm font-semibold text-muted">Loading place details...</p>
+          </section>
+        ) : detail ? (
           <PlaceDetailScreen detail={detail} onBack={() => router.back()} />
         ) : (
           <section className="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center">

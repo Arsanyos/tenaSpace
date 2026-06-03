@@ -1,10 +1,25 @@
 "use client";
 
-import { ArrowLeft, Bookmark, Clock3, MapPinned, Sparkles } from "lucide-react";
+import {
+  ArrowLeft,
+  Bookmark,
+  CheckSquare,
+  Clock3,
+  Headphones,
+  MapPinned,
+  Menu,
+  MessageSquareText,
+  Phone,
+  Save,
+  Sparkles,
+  Timer,
+  Wind,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 import { AiSoundPlayer } from "@/components/ai-sound-player";
 import { WellnessMap } from "@/components/wellness-map";
 import type { WellnessPlaceDetailData } from "@/lib/get-place-detail";
+import type { WellnessSuggestedAction } from "@/lib/mock-wellness-feed";
 
 interface PlaceDetailScreenProps {
   detail: WellnessPlaceDetailData;
@@ -32,6 +47,68 @@ function writeSavedPlaceIds(ids: string[]) {
   localStorage.setItem(SAVED_PLACE_IDS_KEY, JSON.stringify(ids));
 }
 
+function getDefaultActions(detail: WellnessPlaceDetailData): WellnessSuggestedAction[] {
+  const actions: WellnessSuggestedAction[] = [];
+
+  if (detail.section === "move") {
+    actions.push({
+      type: "timer",
+      label: detail.durationMinutes
+        ? `Start a ${detail.durationMinutes}-minute activity`
+        : "Start a short movement session",
+      description: "Use this place as your next gentle movement stop.",
+    });
+  }
+
+  if (detail.section === "calm") {
+    actions.push({
+      type: "breathing",
+      label: "Start a grounding pause",
+      description: "Take a few slow breaths before or after you arrive.",
+    });
+  }
+
+  if (detail.section === "eat") {
+    actions.push({
+      type: "menu",
+      label: "Review healthy order ideas",
+      description: "Pick options that match your food preferences.",
+    });
+  }
+
+  if (detail.section === "health") {
+    actions.push({
+      type: "call",
+      label: "Call before visiting",
+      description: "Confirm opening hours and available services.",
+    });
+  }
+
+  if (detail.mapPlace) {
+    actions.push({
+      type: "directions",
+      label: "Get directions",
+      description: "Open this location in Google Maps.",
+    });
+  }
+
+  if (detail.audioConfig) {
+    actions.push({
+      type: "audio",
+      label: detail.audioConfig.label,
+      description: "Use background sound while you read or unwind.",
+    });
+  }
+
+  actions.push({
+    type: "save",
+    label: "Save this place",
+    description: "Keep it in your wellness list for later.",
+  });
+
+  return actions;
+}
+
 export function PlaceDetailScreen({ detail, onBack }: PlaceDetailScreenProps) {
   const [savedIds, setSavedIds] = useState<string[]>(() => readSavedPlaceIds());
   const saved = savedIds.includes(detail.id);
@@ -43,6 +120,11 @@ export function PlaceDetailScreen({ detail, onBack }: PlaceDetailScreenProps) {
     ? `https://www.google.com/maps/search/?api=1&query=${detail.mapPlace.lat},${detail.mapPlace.lng}`
     : null;
 
+  const renderedActions = useMemo(() => {
+    const actions = detail.suggestedActions.length > 0 ? detail.suggestedActions : getDefaultActions(detail);
+    return actions.slice(0, 4);
+  }, [detail]);
+
   function toggleSaved() {
     const nextIds = saved
       ? savedIds.filter((placeId) => placeId !== detail.id)
@@ -50,6 +132,87 @@ export function PlaceDetailScreen({ detail, onBack }: PlaceDetailScreenProps) {
 
     setSavedIds(nextIds);
     writeSavedPlaceIds(nextIds);
+  }
+
+  function getActionIcon(type: WellnessSuggestedAction["type"]) {
+    switch (type) {
+      case "breathing":
+        return Wind;
+      case "directions":
+        return MapPinned;
+      case "audio":
+        return Headphones;
+      case "save":
+        return Save;
+      case "timer":
+        return Timer;
+      case "checklist":
+        return CheckSquare;
+      case "call":
+        return Phone;
+      case "menu":
+        return Menu;
+      case "note":
+      default:
+        return MessageSquareText;
+    }
+  }
+
+  function renderAction(action: WellnessSuggestedAction, index: number) {
+    const Icon = getActionIcon(action.type);
+    const content = (
+      <>
+        <span className="flex items-start gap-3">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/70 text-orange shadow-soft">
+            <Icon size={17} strokeWidth={2.2} />
+          </span>
+          <span className="min-w-0">
+            <span className="block font-bold text-ink">{action.label}</span>
+            {action.description ? (
+              <span className="mt-0.5 block text-xs font-medium leading-relaxed text-muted">
+                {action.description}
+              </span>
+            ) : null}
+          </span>
+        </span>
+      </>
+    );
+
+    const className =
+      "rounded-2xl border border-stone bg-chip px-4 py-3 text-left text-sm transition hover:border-orange/40 hover:bg-orange-soft";
+
+    if (action.type === "directions" && directionsLink) {
+      return (
+        <a
+          key={`${action.type}-${index}`}
+          href={directionsLink}
+          target="_blank"
+          rel="noreferrer"
+          className={className}
+        >
+          {content}
+        </a>
+      );
+    }
+
+    if (action.type === "save") {
+      return (
+        <button
+          key={`${action.type}-${index}`}
+          type="button"
+          onClick={toggleSaved}
+          className={className}
+        >
+          {content}
+        </button>
+      );
+    }
+
+    return (
+      <button key={`${action.type}-${index}`} type="button" className={className}>
+        {content}
+      </button>
+    );
   }
 
   return (
@@ -141,45 +304,13 @@ export function PlaceDetailScreen({ detail, onBack }: PlaceDetailScreenProps) {
         <div className="mx-auto w-full max-w-5xl rounded-3xl border border-stone bg-white p-5 shadow-soft">
           <p className="text-xs font-black uppercase tracking-[0.14em] text-clay">Suggested actions</p>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            <button
-              type="button"
-              className="rounded-2xl border border-stone bg-chip px-4 py-3 text-left text-sm font-semibold text-ink"
-            >
-              Start 5-minute breathing
-            </button>
-
-            {directionsLink ? (
-              <a
-                href={directionsLink}
-                target="_blank"
-                rel="noreferrer"
-                className="rounded-2xl border border-stone bg-chip px-4 py-3 text-left text-sm font-semibold text-ink transition hover:border-orange/40"
-              >
-                Get directions
-              </a>
-            ) : (
-              <button
-                type="button"
-                disabled
-                className="cursor-not-allowed rounded-2xl border border-stone bg-chip px-4 py-3 text-left text-sm font-semibold text-muted opacity-70"
-              >
-                Get directions
-              </button>
-            )}
+            {renderedActions.map((action, index) => renderAction(action, index))}
 
             {detail.audioConfig ? (
               <div className="sm:col-span-2">
                 <AiSoundPlayer placeId={detail.id} config={detail.audioConfig} />
               </div>
-            ) : (
-              <button
-                type="button"
-                disabled
-                className="cursor-not-allowed rounded-2xl border border-stone bg-chip px-4 py-3 text-left text-sm font-semibold text-muted opacity-70 sm:col-span-2"
-              >
-                AI sound is unavailable for this activity
-              </button>
-            )}
+            ) : null}
           </div>
         </div>
 

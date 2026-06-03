@@ -1,14 +1,13 @@
 "use client";
 
 import { Maximize2 } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { BottomNav } from "@/components/bottom-nav";
 import { SheetModal } from "@/components/sheet-modal";
 import { WellnessMap } from "@/components/wellness-map";
 import type { MapPlace } from "@/lib/map-places";
 import type { WellnessSectionId } from "@/lib/mock-wellness-feed";
-import { recommendedPlaces, type WellnessProfile } from "@/lib/wellness";
-import { loadWellnessProfile } from "@/lib/wellness-profile-storage";
+import { loadCuratedMapPlaces } from "@/lib/wellness-feed-storage";
 
 const SECTION_FILTERS: Array<{ id: "all" | WellnessSectionId; label: string }> = [
   { id: "all", label: "All" },
@@ -23,19 +22,31 @@ interface MapScreenProps {
 }
 
 export function MapScreen({ places }: MapScreenProps) {
-  const [profile] = useState<WellnessProfile>(() => loadWellnessProfile());
+  const [dynamicPlaces, setDynamicPlaces] = useState<MapPlace[]>(places);
   const [sectionFilter, setSectionFilter] = useState<"all" | WellnessSectionId>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [mapModalOpen, setMapModalOpen] = useState(false);
 
-  const highlightedIds = useMemo(() => {
-    return new Set(recommendedPlaces(profile).slice(0, 5).map((place) => place.id));
-  }, [profile]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      const curatedPlaces = loadCuratedMapPlaces();
+      if (curatedPlaces.length > 0) setDynamicPlaces(curatedPlaces);
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  const highlightedIds = useMemo(
+    () => new Set(dynamicPlaces.slice(0, 5).map((place) => place.id)),
+    [dynamicPlaces],
+  );
 
   const filteredPlaces = useMemo(
     () =>
-      sectionFilter === "all" ? places : places.filter((place) => place.section === sectionFilter),
-    [places, sectionFilter],
+      sectionFilter === "all"
+        ? dynamicPlaces
+        : dynamicPlaces.filter((place) => place.section === sectionFilter),
+    [dynamicPlaces, sectionFilter],
   );
 
   const handleSelectPlace = useCallback((id: string) => {

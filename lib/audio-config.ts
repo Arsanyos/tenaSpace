@@ -1,4 +1,5 @@
-import type { Place, WellnessProfile } from "@/lib/wellness";
+import type { WellnessSectionId } from "@/lib/mock-wellness-feed";
+import type { WellnessProfile } from "@/lib/wellness";
 
 export type AudioKind = "walking-mix" | "meditation" | "ambient";
 
@@ -16,7 +17,13 @@ export interface ResolvedAudioConfig extends AudioConfig {
   prompt: string;
 }
 
-const DEFAULT_AUDIO_BY_SECTION: Record<Place["section"], AudioConfig | null> = {
+interface AudioPlaceInput {
+  id: string;
+  section: WellnessSectionId;
+  audioKind?: AudioKind | "none";
+}
+
+const DEFAULT_AUDIO_BY_SECTION: Record<WellnessSectionId, AudioConfig | null> = {
   move: {
     kind: "walking-mix",
     label: "Play AI walking soundscape",
@@ -38,7 +45,7 @@ const DEFAULT_AUDIO_BY_SECTION: Record<Place["section"], AudioConfig | null> = {
   health: null,
 };
 
-const AUDIO_BY_PLACE: Partial<Record<Place["id"], AudioConfig>> = {
+const AUDIO_BY_PLACE: Record<string, AudioConfig> = {
   "meskel-walk": {
     kind: "walking-mix",
     label: "Play AI walking soundscape",
@@ -76,7 +83,12 @@ const MOOD_HINTS: Record<NonNullable<WellnessProfile["mood"]>, string> = {
   "fresh-air": "Blend airy outdoor textures and light breeze.",
 };
 
-function getBaseAudioConfig(place: Place): AudioConfig | null {
+function getBaseAudioConfig(place: AudioPlaceInput): AudioConfig | null {
+  if (place.audioKind === "none") return null;
+  if (place.audioKind) {
+    return DEFAULT_AUDIO_BY_SECTION[place.section];
+  }
+
   return AUDIO_BY_PLACE[place.id] ?? DEFAULT_AUDIO_BY_SECTION[place.section];
 }
 
@@ -86,7 +98,7 @@ export function buildPrompt(basePrompt: string, profile: WellnessProfile): strin
 }
 
 export function resolveAudioConfig(
-  place: Place,
+  place: AudioPlaceInput,
   profile: WellnessProfile,
 ): ResolvedAudioConfig | null {
   const baseConfig = getBaseAudioConfig(place);

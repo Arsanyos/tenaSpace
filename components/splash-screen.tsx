@@ -42,7 +42,9 @@ export function SplashScreen({ onStart, onGuest }: SplashScreenProps) {
         <p className="text-sm text-white/70">TenaSpace turns your city into a personalized wellness map.</p>
         <button
           type="button"
-          onClick={onStart}
+          onClick={()=>{
+            onStart();
+          }}
           className="cta-start-btn w-full rounded-full px-6 py-5 text-lg font-black lg:w-auto lg:min-w-72"
         >
           Start Your Wellness Profile

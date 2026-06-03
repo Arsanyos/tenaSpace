@@ -1,13 +1,18 @@
 import { resolveAudioConfig, type ResolvedAudioConfig } from "@/lib/audio-config";
-import { MAP_PLACES, type MapPlace } from "@/lib/map-places";
-import { places, type Place, type WellnessProfile } from "@/lib/wellness";
+import type { MapPlace } from "@/lib/map-places";
+import type {
+  WellnessPlaceCardData,
+  WellnessSectionId,
+  WellnessSuggestedAction,
+} from "@/lib/mock-wellness-feed";
+import type { WellnessProfile } from "@/lib/wellness";
 
 export interface WellnessPlaceDetailData {
   id: string;
   name: string;
   category: string;
   emoji: string;
-  section: Place["section"];
+  section: WellnessSectionId;
   distanceKm: number;
   tags: string[];
   whyRecommended: string;
@@ -15,14 +20,15 @@ export interface WellnessPlaceDetailData {
   bestTime: string | null;
   mapPlace: MapPlace | null;
   audioConfig: ResolvedAudioConfig | null;
+  suggestedActions: WellnessSuggestedAction[];
 }
 
-function estimateWalkingDuration(place: Place): number | null {
+function estimateWalkingDuration(place: WellnessPlaceCardData): number | null {
   if (place.durationMinutes) return place.durationMinutes;
 
   const isWalkingPlace =
     place.category.toLowerCase().includes("walk") ||
-    place.tags.some((tag) => tag.toLowerCase().includes("walk"));
+    (place.tags ?? []).some((tag) => tag.toLowerCase().includes("walk"));
 
   if (!isWalkingPlace) return null;
 
@@ -30,16 +36,25 @@ function estimateWalkingDuration(place: Place): number | null {
   return Math.max(8, Math.round((place.distanceKm / 4.8) * 60));
 }
 
-export function getPlaceDetail(
-  placeId: string,
+function toMapPlace(place: WellnessPlaceCardData): MapPlace | null {
+  if (typeof place.lat !== "number" || typeof place.lng !== "number") return null;
+
+  return {
+    id: place.id,
+    name: place.name,
+    emoji: place.emoji,
+    category: place.category,
+    section: place.section,
+    lat: place.lat,
+    lng: place.lng,
+    distanceKm: place.distanceKm,
+  };
+}
+
+export function createPlaceDetailFromCuratedPlace(
+  place: WellnessPlaceCardData,
   profile: WellnessProfile,
-): WellnessPlaceDetailData | null {
-  const place = places.find((entry) => entry.id === placeId);
-  if (!place) return null;
-
-  const mapPlace = MAP_PLACES.find((entry) => entry.id === place.id) ?? null;
-  const whyRecommended = place.why(profile) ?? "Recommended for your wellness plan today";
-
+): WellnessPlaceDetailData {
   return {
     id: place.id,
     name: place.name,
@@ -47,11 +62,12 @@ export function getPlaceDetail(
     emoji: place.emoji,
     section: place.section,
     distanceKm: place.distanceKm,
-    tags: place.tags,
-    whyRecommended,
+    tags: place.tags ?? [],
+    whyRecommended: place.recommendation,
     durationMinutes: estimateWalkingDuration(place),
     bestTime: place.bestTime ?? null,
-    mapPlace,
+    mapPlace: toMapPlace(place),
     audioConfig: resolveAudioConfig(place, profile),
+    suggestedActions: place.suggestedActions ?? [],
   };
 }
