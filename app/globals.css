@@ -685,7 +685,9 @@ button {
   .transition-card,
   .transition-orb,
   .transition-logo,
-  .transition-progress-bar {
+  .transition-progress-bar,
+  .apple-audio-player,
+  .apple-audio-waves span {
     animation: none;
   }
 }

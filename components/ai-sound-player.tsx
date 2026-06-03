@@ -1,7 +1,7 @@
 "use client";
 
 import { Loader2, Pause, Play, Volume2 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import type { ResolvedAudioConfig } from "@/lib/audio-config";
 
 interface AiSoundPlayerProps {
@@ -187,77 +187,98 @@ export function AiSoundPlayer({ placeId, config }: AiSoundPlayerProps) {
     setState("paused");
   }
 
+  const trackTitle = isFallbackTrack
+    ? "Fallback ambient track"
+    : config.staticSrc
+      ? "Meditation soundtrack"
+      : "AI-generated soundscape";
+
+  const trackSubtitle =
+    state === "loading"
+      ? config.staticSrc
+        ? "Loading soundtrack..."
+        : "Composing your sound..."
+      : isFallbackTrack
+        ? "Playing local fallback loop"
+        : "Looping in the background";
+
+  const showWaveform = state === "playing" || state === "paused";
+
   if (state === "idle" || state === "error") {
     return (
-      <button
-        type="button"
-        onClick={startPlayback}
-        className="rounded-2xl border border-stone bg-white px-4 py-3 text-left transition hover:border-orange/40 hover:shadow-soft"
-      >
-        <span className="block text-xs font-black uppercase tracking-[0.14em] text-clay">
+      <button type="button" onClick={startPlayback} className="apple-audio-idle">
+        <span className="block text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-clay/90">
           {config.staticSrc ? "Background sound" : "AI sound"}
         </span>
-        <span className="mt-1 block text-sm font-bold text-ink">{config.label}</span>
-        <span className="mt-1 block text-xs text-muted">
+        <span className="mt-1.5 block text-[0.95rem] font-semibold tracking-tight text-ink">
+          {config.label}
+        </span>
+        <span className="mt-1 block text-xs leading-relaxed text-muted">
           {config.staticSrc
             ? "Curated meditation music for this place."
             : "Generated for your activity and mood."}
         </span>
-        {error ? <span className="mt-2 block text-xs font-semibold text-clay">{error}</span> : null}
+        {error ? (
+          <span className="mt-2 block text-xs font-medium text-clay">{error}</span>
+        ) : null}
       </button>
     );
   }
 
   return (
-    <div className="rounded-2xl border border-stone bg-white p-4 shadow-soft">
-      <div className="flex items-center gap-3">
-        <button
-          type="button"
-          onClick={state === "loading" ? undefined : togglePause}
-          className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-orange text-white shadow-soft transition disabled:opacity-70"
-          disabled={state === "loading"}
-          aria-label={state === "playing" ? "Pause sound" : "Resume sound"}
-        >
-          {state === "loading" ? (
-            <Loader2 size={18} className="animate-spin" />
-          ) : state === "playing" ? (
-            <Pause size={18} />
-          ) : (
-            <Play size={18} />
-          )}
-        </button>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-bold text-ink">
-            {isFallbackTrack
-              ? "Fallback ambient track"
-              : config.staticSrc
-                ? "Meditation soundtrack"
-                : "AI-generated soundscape"}
-          </p>
-          <p className="text-xs text-muted">
-            {state === "loading"
-              ? config.staticSrc
-                ? "Loading soundtrack..."
-                : "Composing your sound..."
-              : isFallbackTrack
-                ? "Playing local fallback loop"
-                : "Looping in the background"}
-          </p>
-        </div>
-      </div>
+    <div className="apple-audio-player">
+      <div className="apple-audio-player__inner">
+        <div className="flex items-center gap-3.5">
+          <button
+            type="button"
+            onClick={state === "loading" ? undefined : togglePause}
+            className="apple-audio-play"
+            disabled={state === "loading"}
+            aria-label={state === "playing" ? "Pause sound" : "Resume sound"}
+          >
+            {state === "loading" ? (
+              <Loader2 size={20} strokeWidth={2.25} className="animate-spin" />
+            ) : state === "playing" ? (
+              <Pause size={20} strokeWidth={2.25} fill="currentColor" />
+            ) : (
+              <Play size={20} strokeWidth={2.25} className="ml-0.5" fill="currentColor" />
+            )}
+          </button>
 
-      <label className="mt-4 flex items-center gap-3 text-xs font-semibold text-muted">
-        <Volume2 size={14} />
-        <input
-          type="range"
-          min={0}
-          max={1}
-          step={0.01}
-          value={volume}
-          onChange={(event) => setVolume(Number(event.target.value))}
-          className="w-full accent-orange"
-        />
-      </label>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[0.95rem] font-semibold tracking-tight text-ink">
+              {trackTitle}
+            </p>
+            <p className="text-xs font-medium text-muted">{trackSubtitle}</p>
+            {showWaveform ? (
+              <div
+                className={`apple-audio-waves ${state === "paused" ? "apple-audio-waves--paused" : ""}`}
+                aria-hidden
+              >
+                <span />
+                <span />
+                <span />
+                <span />
+              </div>
+            ) : null}
+          </div>
+        </div>
+
+        <label className="mt-4 flex items-center gap-3">
+          <Volume2 size={15} strokeWidth={2} className="shrink-0 text-muted/80" aria-hidden />
+          <input
+            type="range"
+            min={0}
+            max={1}
+            step={0.01}
+            value={volume}
+            onChange={(event) => setVolume(Number(event.target.value))}
+            className="apple-audio-slider"
+            style={{ "--fill": `${Math.round(volume * 100)}%` } as CSSProperties}
+            aria-label="Volume"
+          />
+        </label>
+      </div>
     </div>
   );
 }
