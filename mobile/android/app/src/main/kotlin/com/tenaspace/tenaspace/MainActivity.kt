@@ -1,0 +1,5 @@
+package com.tenaspace.tenaspace
+
+import io.flutter.embedding.android.FlutterActivity
+
+class MainActivity : FlutterActivity()
