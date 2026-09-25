@@ -33,6 +33,11 @@ flutter run --dart-define=API_BASE_URL=http://192.168.1.10:3000
 # No backend at all (interview / offline demo): bundled Addis Ababa feed,
 # curated tracks unavailable, AI sound falls back to the synthesised loop
 flutter run --dart-define=USE_MOCK_API=true
+
+# No simulator yet? Preview in a desktop browser against the REAL API.
+# Next.js allows CORS from localhost:8080 (see next.config.ts), so keep that port.
+flutter run -d web-server --web-port 8080 --web-hostname localhost --release
+# → open http://localhost:8080 in Safari/Chrome (npm run dev must be running)
 ```
 
 Verify:
