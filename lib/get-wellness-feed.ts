@@ -22,6 +22,14 @@ const GROQ_API_URL =
 // JSON-capable default. Override with GROQ_MODEL if your account differs.
 const GROQ_MODEL = process.env.GROQ_MODEL?.trim() || "openai/gpt-oss-20b";
 
+// The curated feed is ~1,500 output tokens. Groq's default cap (2,048) is
+// shared with the model's hidden reasoning, which gpt-oss spends ~1,000
+// tokens on by default — leaving the JSON truncated ("max completion tokens
+// reached before generating a valid doc"). Keep reasoning minimal and give the
+// document itself enough room.
+const GROQ_MAX_COMPLETION_TOKENS = 4096;
+const GROQ_REASONING_EFFORT = process.env.GROQ_REASONING_EFFORT?.trim() || "low";
+
 export interface CuratedWellnessFeedResult {
   feed: WellnessFeedData | null;
   error: string | null;
@@ -275,6 +283,8 @@ Rules:
     body: JSON.stringify({
       model: GROQ_MODEL,
       temperature: 0.4,
+      max_completion_tokens: GROQ_MAX_COMPLETION_TOKENS,
+      reasoning_effort: GROQ_REASONING_EFFORT,
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: systemPrompt },
