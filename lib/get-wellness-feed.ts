@@ -18,7 +18,9 @@ const SECTION_ORDER: WellnessSectionId[] = ["move", "eat", "calm", "health"];
 
 const GROQ_API_URL =
   process.env.GROQ_API_URL?.trim() || "https://api.groq.com/openai/v1/chat/completions";
-const GROQ_MODEL = process.env.GROQ_MODEL?.trim() || "llama-3.1-8b-instant";
+// `llama-3.1-8b-instant` was retired by Groq; gpt-oss-20b is the current fast
+// JSON-capable default. Override with GROQ_MODEL if your account differs.
+const GROQ_MODEL = process.env.GROQ_MODEL?.trim() || "openai/gpt-oss-20b";
 
 export interface CuratedWellnessFeedResult {
   feed: WellnessFeedData | null;
